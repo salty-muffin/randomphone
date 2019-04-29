@@ -132,14 +132,14 @@ void loop()
       {
         if (i != 3) key_input += keys[row_counter][i]; // numbers
         else if (row_counter == 2 && last_input.length() > 0) key_input = last_input; // redail key
-        else if (row_counter == 3 key_input.length() > 0) key_input.remove(key_input.length() - 1); // R (remove) key
+        else if (row_counter == 3 && key_input.length() > 0) key_input.remove(key_input.length() - 1); // R (remove) key
       }
     }
     // set rows
     for (uint8_t i = 0; i < 4; i++)
     {
-      if (i == row_counter) digitalWrite(rows[i], LOW);
-      else digitalWrite(rows[i], HIGH);
+      if (i == row_counter) digitalWrite(row[i], LOW);
+      else digitalWrite(row[i], HIGH);
     }
     if (++row_counter >= 4) row_counter = 0;
   }
