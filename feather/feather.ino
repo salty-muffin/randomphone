@@ -47,7 +47,7 @@ void setup()
   digitalWrite(HOOK_GND, LOW);
   hook.attach(HOOK, INPUT_PULLUP);
   hook.interval(25);
-  
+
   // setup serial (debug)
   Serial.begin(115200);
 
@@ -97,11 +97,11 @@ void loop()
       if (!fona.hangUp()) Serial.println("failed!");
     }
   }
-  
+
   // check for battery and signal every 3 seconds
   if (utils.check())
   {
-    if (!fona.getBattPercent(&battery)) battery = 200;
-    if (!fona.getNetworkStatus()) rssi = 200; else rssi = map(fona.getRSSI(), 0, 31, 0, 5);
-  } 
+    if (!fona.getBattPercent(&battery)) battery = UTILS_ERROR;
+    if (!fona.getNetworkStatus()) rssi = UTILS_ERROR; else rssi = map(fona.getRSSI(), 0, 31, 0, 5);
+  }
 }
