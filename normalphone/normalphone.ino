@@ -128,6 +128,7 @@ void loop()
     // read columns
     for (uint8_t i = 0; i < 4; i++)
     {
+      column[i].update();
       if (column[i].fell())
       {
         if (i != 3) key_input += keys[row_counter][i]; // numbers
