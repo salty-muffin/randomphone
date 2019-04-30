@@ -4,24 +4,17 @@
 // libraries -----------------------------------------------
 #include <Metro.h>
 #include <Bounce2.h>
-#include <SoftwareSerial.h>
-#include <Adafruit_FONA.h>
-
-#define UTILS_ERROR 200
 
 // pins ----------------------------------------------------
-// fona pins
-const uint8_t FONA_RX  = 9;
-const uint8_t FONA_TX  = 8;
-const uint8_t FONA_RST = 4;
-const uint8_t FONA_RI  = 7;
-
 // hook pins
 const uint8_t HOOK     = 18;
 const uint8_t HOOK_GND = 19;
 
 // keypad pins
 const uint8_t KEYPAD[9] = {2, 3, 5, 6, 9, 10, 11, 12, 13};
+
+// pin translations for keypad rows
+const uint8_t row[4] = {KEYPAD[1], KEYPAD[2], KEYPAD[8], KEYPAD[7]};
 
 // constants -----------------------------------------------
 // keymap                 y   0    1    2    3    4    5    6    7    8        x
@@ -40,41 +33,21 @@ const char keys[4][4] = {{'1', '2', '3', 'X'},
                          {'*', '0', '#', 'R'}};
 
 // objects -------------------------------------------------
-// fona
-SoftwareSerial fona_ss = SoftwareSerial(FONA_TX, FONA_RX);
-SoftwareSerial *fona_serial = &fona_ss;
-
-Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
-
 // debounce for hook and keypad columns
 Bounce hook = Bounce();
 Bounce column[4];
 
 // timers
-Metro serial(1000); // DEBUG
-Metro utils(3000); // battery and signal timer
 Metro read_keys(20); // keypad row switch timer
 
 // variables -----------------------------------------------
-// fona communication c-strings
-char replybuffer[255];
-char number[30];
-
 // keypad-input
 String key_input = "";
 String last_input = "";
 
-// values for utitlies
-uint16_t battery;
-uint8_t rssi;
-
-// pin translations for keypad rows
-uint8_t row[4] = {KEYPAD[1], KEYPAD[2], KEYPAD[8], KEYPAD[7]};
-
 // row counter
 uint8_t row_counter = 0;
 
-// setup ---------------------------------------------------
 void setup()
 {
   // setup serial (DEBUG)
@@ -98,22 +71,8 @@ void setup()
     column[i].attach(KEYPAD[i + 3], INPUT_PULLUP);
     column[i].interval(10);
   }
-
-  // set up sim800 communication
-  fona_serial->begin(4800);
-  while (!fona.begin(*fona_serial))
-  {
-    Serial.println("can't find fona");
-    delay(1000);
-  }
-  Serial.println("found fona");
-  delay(1000);
-
-  // set audio
-  fona.setAudio(FONA_EXTAUDIO);
 }
 
-// loop  ----------------------------------------------------
 void loop()
 {
   // DEBUG
@@ -166,12 +125,5 @@ void loop()
     {
       if (!fona.hangUp()) Serial.println("failed to hang up!");
     }
-  }
-
-  // check for battery and signal every 3 seconds
-  if (utils.check())
-  {
-    if (!fona.getBattPercent(&battery)) battery = UTILS_ERROR;
-    if (!fona.getNetworkStatus()) rssi = UTILS_ERROR; else rssi = map(fona.getRSSI(), 0, 31, 0, 5);
   }
 }
