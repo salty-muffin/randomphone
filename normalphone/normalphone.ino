@@ -4,10 +4,10 @@
 // libraries -----------------------------------------------
 #include <Metro.h>
 #include <Bounce2.h>
-#include <Keypad.h>
-#include <Key.h>
 #include <SoftwareSerial.h>
 #include <Adafruit_FONA.h>
+#include <Keypad.h>
+#include <Key.h>
 
 #define UTILS_ERROR 200
 
@@ -20,8 +20,18 @@ const uint8_t FONA_RI  = 7;
 
 // hook pins
 const uint8_t HOOK_GND = 19;
+const uint8_t HOOK = 18;
+
+// keaypad pins
+const uint8_t row_pins[4]    = {14, 16, 13, 12};
+const uint8_t column_pins[4] = {15, 23, 10, 11};
 
 // constants -----------------------------------------------
+// keymap
+const char keys[4][4] = {{'1', '2', '3', 'X'},
+                         {'4', '5', '6', 'A'},
+                         {'7', '8', '9', 'D'},
+                         {'*', '0', '#', 'R'}};
 
 // objects -------------------------------------------------
 // fona
@@ -32,7 +42,10 @@ Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
 // timers
 Metro serial_timer(1000); // DEBUG
-Metro utils_timer(3000); // battery and signal timer
+Metro utils_timer(20000); // battery and signal timer
+
+// keypad
+Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
 
 // variables -----------------------------------------------
 // fona communication c-strings
@@ -40,22 +53,23 @@ char replybuffer[255];
 char number[30];
 
 // keypad-input
-String key_input = "+4915756037230";
+String key_input = "";
 String last_input = "";
 
 // values for utitlies
 uint16_t battery;
 uint8_t rssi;
 
+// timer variables
+uint64_t last_hook;
+
 // functions -----------------------------------------------
 // output to display
 bool display(String text, uint16_t b, uint8_t r);
 // check for hook pick up and act
-int8_t checkHook(uint16_t i);
+int8_t checkHook(uint8_t p, uint16_t i);
 // check signal an battery
 void checkUtils(Adafruit_FONA* f, uint16_t* b, uint8_t* r);
-// check for key press
-void checkKeypad(String* number, uint16_t i);
 
 // setup ---------------------------------------------------
 void setup()
@@ -66,6 +80,9 @@ void setup()
   // set pins
   pinMode(HOOK_GND, OUTPUT);
   digitalWrite(HOOK_GND, LOW);
+
+  // set debounce time for hook
+  keypad.setDebounceTime(5);
 
   // set up sim800 communication
   fona_serial->begin(4800);
@@ -85,20 +102,24 @@ void setup()
 void loop()
 {
   // check hook status
-  int8_t hook_status = checkHook(25);
+  int8_t hook_status = checkHook(HOOK, 25);
   if (hook_status == 1) // if picked up
   {
+    // save redial number
+    last_input = key_input;
+    
     uint8_t call_status = fona.getCallStatus();
     if (call_status == 0) // ready -> call
     {
-      last_input = key_input;
       if (!fona.callPhone(key_input.c_str())) Serial.println("failed to call!");
-      key_input = "";
     }
     else if (call_status == 3) // incoming -> pick up
     {
       if (!fona.pickUp()) Serial.println("failed to pick up!");
     }
+
+    // clear input
+    key_input = "";
   }
   else if (hook_status == -1) // if put down
   {
@@ -110,13 +131,25 @@ void loop()
   }
 
   // check keypad
-  checkKeypad(&key_input, last_input, 10);
+  char key = keypad.getKey();
 
+  // check key
+  if (key != NO_KEY && key != 'A' && key != 'X' && key != '*' && key != '#')
+  {
+    // remove
+    if (key == 'R' && key_input.length() > 0) key_input.remove(key_input.length() - 1);
+    // redial
+    else if (key == 'D') key_input = last_input;
+    // number
+    else if (key != 'R') key_input += String(key);
+  }
+
+  
   // check signal and battery
   if (utils_timer.check()) checkUtils(&fona, &battery, &rssi);
 
   // DEBUG
-  if (serial_timer.check()) display("K: " + key_input + "\tL: " + last_input, battery, rssi);
+  if (serial_timer.check()) display(key_input + "\tL: " + last_input, battery, rssi);
 }
 
 // functions -----------------------------------------------
@@ -125,12 +158,8 @@ bool display(String text, uint16_t b, uint8_t r)
   Serial.println("S: " + String(r) + "\tB: " + String(b) + "\tK: " + String(text));
 }
 
-int8_t checkHook(uint16_t i)
+int8_t checkHook(uint8_t p, uint16_t i)
 {
-  // constants
-  // hook pins
-  const uint8_t HOOK = 18;
-
   // static variables
   static Bounce hook = Bounce();
   static bool first = true;
@@ -156,38 +185,4 @@ void checkUtils(Adafruit_FONA* f, uint16_t* b, uint8_t* r)
 {
   if (!f->getBattPercent(b)) *b = UTILS_ERROR;
   if (!f->getNetworkStatus()) *r = UTILS_ERROR; else *r = map(f->getRSSI(), 0, 31, 0, 5);
-}
-
-void checkKeypad(String* number, String last_number, uint16_t i)
-{
-  // constants
-  // keymap
-  const char keys[4][4] = {{'1', '2', '3', 'X'},
-                           {'4', '5', '6', 'A'},
-                           {'7', '8', '9', 'D'},
-                           {'*', '0', '#', 'R'}};
-
-  // keaypad pins
-  const uint8_t row_pins[4]    = {3, 5, 13, 12};
-  const uint8_t column_pins[4] = {6, 9, 10, 11};
-
-  // static variables
-  static Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
-  static bool first = true;
-
-  if (first) // if first -> set debounce time
-  {
-    keypad.setDebounceTime(i);
-
-    first = false;
-  }
-
-  char key = keypad.getKey();
-
-  if (key != NO_KEY)
-  {
-    if (key == 'R' && number->length() > 0) number->remove(number->length() - 1);
-    else if (key == 'D') *number = last_number;
-    else *number += String(key);
-  }
 }

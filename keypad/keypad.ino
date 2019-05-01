@@ -3,12 +3,10 @@
 
 // libraries -----------------------------------------------
 #include <Metro.h>
-#include <Bounce2.h>
-#include <Keypad.h>
-#include <Key.h>
+#include <KeyMatrix.h>
 
 // pins ----------------------------------------------------
-// Keaypad pins
+// hook pins
 const uint8_t row_pins[4]    = {3, 5, 13, 12};
 const uint8_t column_pins[4] = {6, 9, 10, 11};
 
@@ -29,7 +27,7 @@ const char keys[4][4] = {{'1', '2', '3', 'X'},
                          {'*', '0', '#', 'R'}};
 
 // objects -------------------------------------------------
-Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
+KeyMatrix keypad((char *) keys, 4, 4, row_pins, column_pins);
 
 // variables -----------------------------------------------
 // keypad-input
@@ -46,10 +44,7 @@ void setup()
 
 void loop()
 {
-  // DEBUG
   char key = keypad.getKey();
-
-  if (key != NO_KEY) Serial.println(key);
-
-  delay(1);
+  // poll events from the keypad
+  if (key != 0) Serial.println(key);
 }
