@@ -8,7 +8,7 @@
 #include <Key.h>
 
 // pins ----------------------------------------------------
-// hook pins
+// Keaypad pins
 const uint8_t row_pins[4]    = {3, 5, 13, 12};
 const uint8_t column_pins[4] = {6, 9, 10, 11};
 
@@ -29,7 +29,7 @@ const char keys[4][4] = {{'1', '2', '3', 'X'},
                          {'*', '0', '#', 'R'}};
 
 // objects -------------------------------------------------
-Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4)
+Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
 
 // variables -----------------------------------------------
 // keypad-input
