@@ -1,6 +1,9 @@
 // papayapeter
 // 2019
 
+// defines -------------------------------------------------
+#define UTILS_ERROR 200
+
 // libraries -----------------------------------------------
 #include <Metro.h>
 #include <Bounce2.h>
@@ -8,8 +11,6 @@
 #include <Adafruit_FONA.h>
 #include <Keypad.h>
 #include <Key.h>
-
-#define UTILS_ERROR 200
 
 // pins ----------------------------------------------------
 // fona pins
@@ -85,11 +86,12 @@ void setup()
   keypad.setDebounceTime(5);
 
   // set up sim800 communication
-  fona_serial->begin(4800);
+  fona_serial->begin(38400);
   while (!fona.begin(*fona_serial))
   {
     Serial.println("can't find fona");
-    delay(1000);
+    
+    while (true) delay(10);
   }
   Serial.println("found fona");
   delay(1000);
