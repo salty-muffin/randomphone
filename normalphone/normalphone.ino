@@ -215,21 +215,21 @@ void playKeyTone(Adafruit_FONA* f, char k)
 {
   switch (k)
   {
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-    case '*':
-    case '#':
-    case 'X':
-    case 'A':
-    case 'D':
-    case 'R':
-    default: f->playUserTone(400, 500, 0, 200); break;
+    case '1': f->playUserXTone(697, 1209, 500, 100, 200); break;
+    case '2': f->playUserXTone(697, 1336, 500, 100, 200); break;
+    case '3': f->playUserXTone(697, 1477, 500, 100, 200); break;
+    case '4': f->playUserXTone(770, 1209, 500, 100, 200); break;
+    case '5': f->playUserXTone(770, 1336, 500, 100, 200); break;
+    case '6': f->playUserXTone(770, 1477, 500, 100, 200); break;
+    case '7': f->playUserXTone(852, 1209, 500, 100, 200); break;
+    case '8': f->playUserXTone(852, 1336, 500, 100, 200); break;
+    case '9': f->playUserXTone(852, 1477, 500, 100, 200); break;
+    case '*': f->playUserXTone(941, 1209, 500, 100, 200); break;
+    case '0': f->playUserXTone(941, 1336, 500, 100, 200); break;
+    case '#': f->playUserXTone(941, 1477, 500, 100, 200); break;
+    case 'X': f->playUserXTone(697, 1633, 500, 100, 200); break;
+    case 'A': f->playUserXTone(770, 1633, 500, 100, 200); break;
+    case 'D': f->playUserXTone(852, 1633, 500, 100, 200); break;
+    case 'R': f->playUserXTone(941, 1633, 500, 100, 200); break;
   }
 }
