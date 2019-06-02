@@ -107,21 +107,28 @@ void loop()
   int8_t hook_status = checkHook(HOOK, 25);
   if (hook_status == 1) // if picked up
   {
-    // save redial number
-    last_input = key_input;
-    
-    uint8_t call_status = fona.getCallStatus();
-    if (call_status == 0) // ready -> call
+    if (key_input == "")
     {
-      if (!fona.callPhone(key_input.c_str())) Serial.println("failed to call!");
+      fona.playUserTone(425, 500, 500, 30000);
     }
-    else if (call_status == 3) // incoming -> pick up
+    else
     {
-      if (!fona.pickUp()) Serial.println("failed to pick up!");
+      // save redial number
+      last_input = key_input;
+      
+      uint8_t call_status = fona.getCallStatus();
+      if (call_status == 0) // ready -> call
+      {
+        if (!fona.callPhone(key_input.c_str())) Serial.println("failed to call!");
+      }
+      else if (call_status == 3) // incoming -> pick up
+      {
+        if (!fona.pickUp()) Serial.println("failed to pick up!");
+      }
+  
+      // clear input
+      key_input = "";
     }
-
-    // clear input
-    key_input = "";
   }
   else if (hook_status == -1) // if put down
   {
@@ -130,6 +137,8 @@ void loop()
     {
       if (!fona.hangUp()) Serial.println("failed to hang up!");
     }
+
+    fona.stopUserTone();
   }
 
   // check keypad
