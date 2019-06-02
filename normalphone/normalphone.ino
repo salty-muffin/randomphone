@@ -71,6 +71,8 @@ bool display(String text, uint16_t b, uint8_t r);
 int8_t checkHook(uint8_t p, uint16_t i);
 // check signal an battery
 void checkUtils(Adafruit_FONA* f, uint16_t* b, uint8_t* r);
+// play corresponding keytone
+void playKeyTone(Adafruit_FONA* f, char k);
 
 // setup ---------------------------------------------------
 void setup()
@@ -107,28 +109,33 @@ void loop()
   int8_t hook_status = checkHook(HOOK, 25);
   if (hook_status == 1) // if picked up
   {
-    if (key_input == "")
+    // save redial number
+    last_input = key_input;
+    
+    uint8_t call_status = fona.getCallStatus();
+    if (call_status == 0) // ready -> call
     {
-      fona.playUserTone(425, 500, 500, 30000);
-    }
-    else
-    {
-      // save redial number
-      last_input = key_input;
-      
-      uint8_t call_status = fona.getCallStatus();
-      if (call_status == 0) // ready -> call
+      if (key_input == "") // if nothing dialed -> play dialtone
       {
+        fona.playToolkitTone(FONA_STTONE_USADIALTONE, 300000);
+      }
+      else // if something is dialed -> play dial sequence and call
+      {
+        for (int i = 0; i < key_input.length(); i++)
+        {
+          playKeyTone(&fona, key_input[i]);
+          delay(100);
+        }
         if (!fona.callPhone(key_input.c_str())) Serial.println("failed to call!");
       }
-      else if (call_status == 3) // incoming -> pick up
-      {
-        if (!fona.pickUp()) Serial.println("failed to pick up!");
-      }
-  
-      // clear input
-      key_input = "";
     }
+    else if (call_status == 3) // incoming -> pick up
+    {
+      if (!fona.pickUp()) Serial.println("failed to pick up!");
+    }
+  
+    // clear input
+    key_input = "";
   }
   else if (hook_status == -1) // if put down
   {
@@ -138,7 +145,7 @@ void loop()
       if (!fona.hangUp()) Serial.println("failed to hang up!");
     }
 
-    fona.stopUserTone();
+    fona.stopToolkitTone();
   }
 
   // check keypad
@@ -153,6 +160,12 @@ void loop()
     else if (key == 'D') key_input = last_input;
     // number
     else if (key != 'R') key_input += String(key);
+
+    // key sound when picked up
+    if (digitalRead(HOOK))
+    {
+      playKeyTone(&fona, key);
+    }
   }
 
   
@@ -196,4 +209,27 @@ void checkUtils(Adafruit_FONA* f, uint16_t* b, uint8_t* r)
 {
   if (!f->getBattPercent(b)) *b = UTILS_ERROR;
   if (!f->getNetworkStatus()) *r = UTILS_ERROR; else *r = map(f->getRSSI(), 0, 31, 0, 5);
+}
+
+void playKeyTone(Adafruit_FONA* f, char k)
+{
+  switch (k)
+  {
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case '*':
+    case '#':
+    case 'X':
+    case 'A':
+    case 'D':
+    case 'R':
+    default: f->playUserTone(400, 500, 0, 200); break;
+  }
 }
