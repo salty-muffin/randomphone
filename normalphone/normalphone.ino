@@ -34,6 +34,9 @@ const char keys[4][4] = {{'1', '2', '3', 'X'},
                          {'7', '8', '9', 'D'},
                          {'*', '0', '#', 'R'}};
 
+// wait ... milliseconds to call after last dial
+const uint64_t call_delay = 3000;
+
 // objects -------------------------------------------------
 // fona
 SoftwareSerial fona_ss = SoftwareSerial(FONA_TX, FONA_RX);
@@ -44,6 +47,7 @@ Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 // timers
 Metro serial_timer(1000); // DEBUG
 Metro utils_timer(20000); // battery and signal timer
+Metro tone_timer(300); // timer for dial tones
 
 // keypad
 Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
@@ -56,19 +60,27 @@ char number[30];
 // keypad-input
 String key_input = "";
 String last_input = "";
+String key_copy = "";
 
 // values for utitlies
 uint16_t battery;
 uint8_t rssi;
 
 // timer variables
-uint64_t last_hook;
+uint64_t last_key;
+
+// other
+bool hook_status;
+uint8_t user_status = 0;
+uint8_t tone_sequence;
+
+
 
 // functions -----------------------------------------------
 // output to display
 bool display(String text, uint16_t b, uint8_t r);
 // check for hook pick up and act
-int8_t checkHook(uint8_t p, uint16_t i);
+int8_t checkHook(uint8_t p, uint16_t i, bool* s = NULL);
 // check signal an battery
 void checkUtils(Adafruit_FONA* f, uint16_t* b, uint8_t* r);
 // play corresponding keytone
@@ -105,47 +117,118 @@ void setup()
 // loop  ----------------------------------------------------
 void loop()
 {
-  // check hook status
-  int8_t hook_status = checkHook(HOOK, 25);
-  if (hook_status == 1) // if picked up
+  // check hook
+  int8_t hook_change = checkHook(HOOK, 25, &hook_status);
+  if (hook_change == 1) // if picked up
   {
-    // save redial number
-    last_input = key_input;
+    uint8_t call_status = fona.getCallStatus();
     
-    uint8_t call_status = fona.getCallStatus();
-    if (call_status == 0) // ready -> call
+    if (call_status == 3) // if incoming call -> pick up
     {
-      if (key_input == "") // if nothing dialed -> play dialtone
-      {
-        fona.playToolkitTone(FONA_STTONE_USADIALTONE, 300000);
-      }
-      else // if something is dialed -> play dial sequence and call
-      {
-        for (int i = 0; i < key_input.length(); i++)
-        {
-          playKeyTone(&fona, key_input[i]);
-          delay(100);
-        }
-        if (!fona.callPhone(key_input.c_str())) Serial.println("failed to call!");
-      }
+      fona.pickUp();
     }
-    else if (call_status == 3) // incoming -> pick up
+    else if (key_input == "") // else if nothing dialed -> play dial tone
     {
-      if (!fona.pickUp()) Serial.println("failed to pick up!");
+      fona.playToolkitTone(FONA_STTONE_USADIALTONE, 15300000);
+
+      // enable dialling
+      user_status = 1;
     }
-  
-    // clear input
-    key_input = "";
+    else // else if something was dialed
+    {
+      // enable calling
+      user_status = 2;
+
+      tone_sequence = 0;
+
+      // reset dial tone timer
+      tone_timer.reset();
+    }
   }
-  else if (hook_status == -1) // if put down
+  else if (hook_change == -1) // if put down
   {
     uint8_t call_status = fona.getCallStatus();
+    
     if (call_status == 4) // in progress -> hang up
     {
-      if (!fona.hangUp()) Serial.println("failed to hang up!");
+      fona.hangUp();
+    }
+    else
+    {
+      // stop playing dial tone
+      fona.stopToolkitTone();
     }
 
-    fona.stopToolkitTone();
+    // clear input
+    key_input = "";
+    key_copy = "";
+
+    // reset dialability
+    user_status = 0;
+  }
+
+  // run dial and call routines
+  if (user_status == 1) // nothing dialled
+  {
+    if (key_input != "")
+    {
+      fona.stopToolkitTone();
+      
+      if (key_input != key_copy) // if something has been dialled
+      {
+        // reset timer
+        last_key = millis();
+
+        // reset comparison
+        key_copy = key_input;
+      }
+      else if (millis() > last_key + call_delay) // if something has been dialled and time has passed -> call
+      {
+        // disable dialling
+        user_status = 3;
+
+        // save redial number
+        last_input = key_input;
+
+        // call
+        fona.callPhone(key_input.c_str());
+
+        // clear input
+        key_input = "";
+        key_copy = "";
+      }
+    }
+    else
+    {
+      // reset comparison
+      key_copy = key_input;
+    }
+  }
+  else if (user_status == 2) // something dialled
+  {
+    if (tone_sequence < key_input.length()) // play tones for number in string
+    {
+      if (tone_timer.check())
+      {
+        Serial.println(1);
+        playKeyTone(&fona, key_input[tone_sequence++]);
+      }
+    }
+    else
+    {
+      // disable dialling
+      user_status = 3;
+
+      // save redial number
+      last_input = key_input;
+
+      // call
+      fona.callPhone(key_input.c_str());
+
+      // clear input
+      key_input = "";
+      key_copy = "";
+    }
   }
 
   // check keypad
@@ -162,12 +245,11 @@ void loop()
     else if (key != 'R') key_input += String(key);
 
     // key sound when picked up
-    if (digitalRead(HOOK))
+    if (user_status > 0)
     {
       playKeyTone(&fona, key);
     }
   }
-
   
   // check signal and battery
   if (utils_timer.check()) checkUtils(&fona, &battery, &rssi);
@@ -182,7 +264,7 @@ bool display(String text, uint16_t b, uint8_t r)
   Serial.println("S: " + String(r) + "\tB: " + String(b) + "\tK: " + String(text));
 }
 
-int8_t checkHook(uint8_t p, uint16_t i)
+int8_t checkHook(uint8_t p, uint16_t i, bool* s)
 {
   // static variables
   static Bounce hook = Bounce();
@@ -198,9 +280,17 @@ int8_t checkHook(uint8_t p, uint16_t i)
 
   hook.update();
   // if picked up
-  if (hook.rose()) return 1;
+  if (hook.rose())
+  {
+    if (s != NULL) *s = true;
+    return 1;
+  }
   // if put down
-  else if (hook.fell()) return -1;
+  else if (hook.fell())
+  {
+    if (s != NULL) *s = false;
+    return -1;
+  }
   // if nothing happens
   return 0;
 }
@@ -218,18 +308,18 @@ void playKeyTone(Adafruit_FONA* f, char k)
     case '1': f->playUserXTone(697, 1209, 500, 100, 200); break;
     case '2': f->playUserXTone(697, 1336, 500, 100, 200); break;
     case '3': f->playUserXTone(697, 1477, 500, 100, 200); break;
+    case 'X': f->playUserXTone(697, 1633, 500, 100, 200); break;
     case '4': f->playUserXTone(770, 1209, 500, 100, 200); break;
     case '5': f->playUserXTone(770, 1336, 500, 100, 200); break;
     case '6': f->playUserXTone(770, 1477, 500, 100, 200); break;
+    case 'A': f->playUserXTone(770, 1633, 500, 100, 200); break;
     case '7': f->playUserXTone(852, 1209, 500, 100, 200); break;
     case '8': f->playUserXTone(852, 1336, 500, 100, 200); break;
     case '9': f->playUserXTone(852, 1477, 500, 100, 200); break;
+    case 'D': f->playUserXTone(852, 1633, 500, 100, 200); break;
     case '*': f->playUserXTone(941, 1209, 500, 100, 200); break;
     case '0': f->playUserXTone(941, 1336, 500, 100, 200); break;
     case '#': f->playUserXTone(941, 1477, 500, 100, 200); break;
-    case 'X': f->playUserXTone(697, 1633, 500, 100, 200); break;
-    case 'A': f->playUserXTone(770, 1633, 500, 100, 200); break;
-    case 'D': f->playUserXTone(852, 1633, 500, 100, 200); break;
     case 'R': f->playUserXTone(941, 1633, 500, 100, 200); break;
   }
 }
