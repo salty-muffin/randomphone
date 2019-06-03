@@ -112,6 +112,8 @@ void setup()
 
   // set audio
   fona.setAudio(FONA_EXTAUDIO);
+  fona.setVolume(20);
+  fona.setRingerVolume(80);
 }
 
 // loop  ----------------------------------------------------
