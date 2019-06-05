@@ -1,6 +1,9 @@
 // papayapeter
 // 2019
 
+// to finally work, disable all serial communication (slows it down if not connected to a computer somehow
+// and comment out the line "#define ADAFRUIT_FONA_DEBUG" in "FONAConfig.h" in the modified library
+
 // defines -------------------------------------------------
 #define UTILS_ERROR 200
 
@@ -11,6 +14,7 @@
 #include <Adafruit_FONA.h>
 #include <Keypad.h>
 #include <Key.h>
+#include <JQ6500_Serial.h>
 
 // pins ----------------------------------------------------
 // fona pins
@@ -49,6 +53,7 @@ const uint64_t call_delay = 3000;
 // fona
 SoftwareSerial fona_ss = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fona_serial = &fona_ss;
+JQ6500_Serial ringer(JQ_TX, JQ_RX);
 
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
@@ -56,6 +61,8 @@ Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 Metro serial_timer(1000); // DEBUG
 Metro utils_timer(20000); // battery and signal timer
 Metro tone_timer(300); // timer for dial tones
+Metro led_timer(2000); // led blink timer
+Metro ring_timer(1000); // ring check timer
 
 // keypad
 Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
@@ -81,6 +88,8 @@ uint64_t last_key;
 bool hook_status;
 uint8_t user_status = 0;
 uint8_t tone_sequence;
+bool led_status = true;
+bool ringing;
 
 
 
@@ -103,6 +112,10 @@ void setup()
   // set pins
   pinMode(HOOK_GND, OUTPUT);
   digitalWrite(HOOK_GND, LOW);
+  pinMode(LED_GND, OUTPUT);
+  digitalWrite(LED_GND, LOW);
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
 
   // set debounce time for hook
   keypad.setDebounceTime(5);
@@ -116,17 +129,46 @@ void setup()
     while (true) delay(10);
   }
   Serial.println("found fona");
+  digitalWrite(LED, HIGH);
   delay(1000);
+  digitalWrite(LED, LOW);
+
+  // ringer serial initaiate
+  ringer.begin(9600);
+  ringer.reset();
+  ringer.setVolume(30);
+  ringer.setLoopMode(MP3_LOOP_ALL);
 
   // set audio
   fona.setAudio(FONA_EXTAUDIO);
   fona.setVolume(20);
-  fona.setRingerVolume(80);
+  fona.setRingerVolume(0);
+
+  // check signal and battery
+  checkUtils(&fona, &battery, &rssi);
 }
 
 // loop  ----------------------------------------------------
 void loop()
 {
+  // check to ring
+  if (ring_timer.check())
+  {
+    if (fona.getCallStatus() == 3 && !ringing)
+    {
+      Serial.println(1);
+      ringer.play();
+
+      ringing = true;
+    }
+    else if (fona.getCallStatus() != 3 && ringing)
+    {
+      Serial.println(2);
+      ringer.pause();
+
+      ringing = false;
+    }
+  }
   // check hook
   int8_t hook_change = checkHook(HOOK, 25, &hook_status);
   if (hook_change == 1) // if picked up
@@ -135,6 +177,11 @@ void loop()
 
     if (call_status == 3) // if incoming call -> pick up
     {
+      Serial.println(2);
+      ringer.pause();
+
+      ringing = false;
+      
       fona.pickUp();
     }
     else if (key_input == "") // else if nothing dialed -> play dial tone
@@ -263,6 +310,21 @@ void loop()
 
   // check signal and battery
   if (utils_timer.check()) checkUtils(&fona, &battery, &rssi);
+
+  // led battery indicator
+  if (battery <= 50 && battery > 25)
+  {
+    digitalWrite(LED, HIGH);
+  }
+  else if (battery <= 25)
+  {
+    if (led_timer.check())
+    {
+      if (led_status) digitalWrite(LED, HIGH);
+      else digitalWrite(LED, LOW);
+      led_status = !led_status;
+    }
+  }
 
   // DEBUG
   if (serial_timer.check()) display(key_input + "\tL: " + last_input, battery, rssi);
