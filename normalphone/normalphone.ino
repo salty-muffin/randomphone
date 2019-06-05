@@ -264,7 +264,6 @@ void loop()
     {
       if (tone_timer.check())
       {
-        Serial.println(1);
         playKeyTone(&fona, key_input[tone_sequence++]);
       }
     }
