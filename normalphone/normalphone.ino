@@ -19,6 +19,14 @@ const uint8_t FONA_TX  = 8;
 const uint8_t FONA_RST = 4;
 const uint8_t FONA_RI  = 7;
 
+// led pins
+const uint8_t LED_GND = 2;
+const uint8_t LED = 3;
+
+// jq pins
+const uint8_t JQ_RX = 20; // arduino tx (orange)
+const uint8_t JQ_TX = 21; // arduino rx (green)
+
 // hook pins
 const uint8_t HOOK_GND = 19;
 const uint8_t HOOK = 18;
@@ -104,7 +112,7 @@ void setup()
   while (!fona.begin(*fona_serial))
   {
     Serial.println("can't find fona");
-    
+
     while (true) delay(10);
   }
   Serial.println("found fona");
@@ -124,7 +132,7 @@ void loop()
   if (hook_change == 1) // if picked up
   {
     uint8_t call_status = fona.getCallStatus();
-    
+
     if (call_status == 3) // if incoming call -> pick up
     {
       fona.pickUp();
@@ -150,7 +158,7 @@ void loop()
   else if (hook_change == -1) // if put down
   {
     uint8_t call_status = fona.getCallStatus();
-    
+
     if (call_status == 4) // in progress -> hang up
     {
       fona.hangUp();
@@ -175,7 +183,7 @@ void loop()
     if (key_input != "")
     {
       fona.stopToolkitTone();
-      
+
       if (key_input != key_copy) // if something has been dialled
       {
         // reset timer
@@ -252,7 +260,7 @@ void loop()
       playKeyTone(&fona, key);
     }
   }
-  
+
   // check signal and battery
   if (utils_timer.check()) checkUtils(&fona, &battery, &rssi);
 
