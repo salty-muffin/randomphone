@@ -156,14 +156,12 @@ void loop()
   {
     if (fona.getCallStatus() == 3 && !ringing)
     {
-      Serial.println(1);
       ringer.play();
 
       ringing = true;
     }
     else if (fona.getCallStatus() != 3 && ringing)
     {
-      Serial.println(2);
       ringer.pause();
 
       ringing = false;
@@ -177,7 +175,6 @@ void loop()
 
     if (call_status == 3) // if incoming call -> pick up
     {
-      Serial.println(2);
       ringer.pause();
 
       ringing = false;
