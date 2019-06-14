@@ -178,7 +178,7 @@ void loop()
       ringer.pause();
 
       ringing = false;
-      
+
       fona.pickUp();
     }
     else if (key_input == "") // else if nothing dialed -> play dial tone
@@ -305,20 +305,23 @@ void loop()
   }
 
   // check signal and battery
-  if (utils_timer.check()) checkUtils(&fona, &battery, &rssi);
+  if (utils_timer.check())
+  {
+    checkUtils(&fona, &battery, &rssi);
 
-  // led battery indicator
-  if (battery <= 50 && battery > 25)
-  {
-    digitalWrite(LED, HIGH);
-  }
-  else if (battery <= 25)
-  {
-    if (led_timer.check())
+    // led battery indicator
+    if (battery <= 50 && battery > 25)
     {
-      if (led_status) digitalWrite(LED, HIGH);
-      else digitalWrite(LED, LOW);
-      led_status = !led_status;
+      digitalWrite(LED, HIGH);
+    }
+    else if (battery <= 25)
+    {
+      if (led_timer.check())
+      {
+        if (led_status) digitalWrite(LED, HIGH);
+        else digitalWrite(LED, LOW);
+        led_status = !led_status;
+      }
     }
   }
 
