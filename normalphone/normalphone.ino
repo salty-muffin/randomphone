@@ -1,7 +1,7 @@
 // papayapeter
 // 2019
 
-// to finally work, disable all serial communication (slows it down if not connected to a computer somehow
+// to finally work, disable all serial communication (slows it down if not connected to a computer somehow)
 // and comment out the line "#define ADAFRUIT_FONA_DEBUG" in "FONAConfig.h" in the modified library
 
 // defines -------------------------------------------------
