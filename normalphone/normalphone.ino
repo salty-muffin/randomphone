@@ -23,13 +23,16 @@ const uint8_t FONA_TX  = 8;
 const uint8_t FONA_RST = 4;
 const uint8_t FONA_RI  = 7;
 
-// led pins
-const uint8_t LED_GND = 2;
+// led pin
 const uint8_t LED = 3;
 
 // jq pins
 const uint8_t JQ_RX = 20; // arduino tx (orange)
 const uint8_t JQ_TX = 21; // arduino rx (green)
+
+// display pins
+const uint8_t DISPLAY_RX = 22; // (green)
+const uint8_t DISPLAY_CHECK = 2; // (white)
 
 // hook pins
 const uint8_t HOOK_GND = 19;
@@ -112,8 +115,6 @@ void setup()
   // set pins
   pinMode(HOOK_GND, OUTPUT);
   digitalWrite(HOOK_GND, LOW);
-  pinMode(LED_GND, OUTPUT);
-  digitalWrite(LED_GND, LOW);
   pinMode(LED, OUTPUT);
   digitalWrite(LED, LOW);
 
