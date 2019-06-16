@@ -124,8 +124,8 @@ void setup()
   keypad.setDebounceTime(5);
 
   // set display plug test debounce time
-  hook.attach(DISPLAY_CHECK, INPUT_PULLUP);
-  hook.interval(50);
+  diplay_plugged.attach(DISPLAY_CHECK, INPUT_PULLUP);
+  diplay_plugged.interval(50);
 
   // set up sim800 communication
   fona_serial->begin(38400);
