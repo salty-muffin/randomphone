@@ -13,7 +13,6 @@
 #include <SoftwareSerial.h>
 #include <Adafruit_FONA.h>
 #include <Keypad.h>
-#include <Key.h>
 #include <JQ6500_Serial.h>
 
 // pins ----------------------------------------------------
@@ -70,6 +69,9 @@ Metro ring_timer(1000); // ring check timer
 // keypad
 Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
 
+// display
+Bounce diplay_plugged = Bounce();
+
 // variables -----------------------------------------------
 // fona communication c-strings
 char replybuffer[255];
@@ -98,7 +100,7 @@ bool ringing;
 
 // functions -----------------------------------------------
 // output to display
-bool display(String text, uint16_t b, uint8_t r);
+void display(String i, uint16_t b, uint8_t r);
 // check for hook pick up and act
 int8_t checkHook(uint8_t p, uint16_t i, bool* s = NULL);
 // check signal an battery
@@ -120,6 +122,10 @@ void setup()
 
   // set debounce time for hook
   keypad.setDebounceTime(5);
+
+  // set display plug test debounce time
+  hook.attach(DISPLAY_CHECK, INPUT_PULLUP);
+  hook.interval(50);
 
   // set up sim800 communication
   fona_serial->begin(38400);
@@ -327,13 +333,13 @@ void loop()
   }
 
   // DEBUG
-  if (serial_timer.check()) display(key_input + "\tL: " + last_input, battery, rssi);
+  if (serial_timer.check()) Serial.println("S: " + String(rssi) + "\tB: " + String(battery) + "\tK: " + key_input + "\tL: " + last_input);
 }
 
 // functions -----------------------------------------------
-bool display(String text, uint16_t b, uint8_t r)
+void display(String i, uint16_t b, uint8_t r)
 {
-  Serial.println("S: " + String(r) + "\tB: " + String(b) + "\tK: " + String(text));
+
 }
 
 int8_t checkHook(uint8_t p, uint16_t i, bool* s)
@@ -375,23 +381,24 @@ void checkUtils(Adafruit_FONA* f, uint16_t* b, uint8_t* r)
 
 void playKeyTone(Adafruit_FONA* f, char k)
 {
+  const uint16_t tone_length = 200; // min = 100; max = 500; interval = 100
   switch (k)
   {
-    case '1': f->playUserXTone(697, 1209, 500, 100, 200); break;
-    case '2': f->playUserXTone(697, 1336, 500, 100, 200); break;
-    case '3': f->playUserXTone(697, 1477, 500, 100, 200); break;
-    case 'X': f->playUserXTone(697, 1633, 500, 100, 200); break;
-    case '4': f->playUserXTone(770, 1209, 500, 100, 200); break;
-    case '5': f->playUserXTone(770, 1336, 500, 100, 200); break;
-    case '6': f->playUserXTone(770, 1477, 500, 100, 200); break;
-    case 'A': f->playUserXTone(770, 1633, 500, 100, 200); break;
-    case '7': f->playUserXTone(852, 1209, 500, 100, 200); break;
-    case '8': f->playUserXTone(852, 1336, 500, 100, 200); break;
-    case '9': f->playUserXTone(852, 1477, 500, 100, 200); break;
-    case 'D': f->playUserXTone(852, 1633, 500, 100, 200); break;
-    case '*': f->playUserXTone(941, 1209, 500, 100, 200); break;
-    case '0': f->playUserXTone(941, 1336, 500, 100, 200); break;
-    case '#': f->playUserXTone(941, 1477, 500, 100, 200); break;
-    case 'R': f->playUserXTone(941, 1633, 500, 100, 200); break;
+    case '1': f->playUserXTone(697, 1209, 500, 100, tone_length); break;
+    case '2': f->playUserXTone(697, 1336, 500, 100, tone_length); break;
+    case '3': f->playUserXTone(697, 1477, 500, 100, tone_length); break;
+    case 'X': f->playUserXTone(697, 1633, 500, 100, tone_length); break;
+    case '4': f->playUserXTone(770, 1209, 500, 100, tone_length); break;
+    case '5': f->playUserXTone(770, 1336, 500, 100, tone_length); break;
+    case '6': f->playUserXTone(770, 1477, 500, 100, tone_length); break;
+    case 'A': f->playUserXTone(770, 1633, 500, 100, tone_length); break;
+    case '7': f->playUserXTone(852, 1209, 500, 100, tone_length); break;
+    case '8': f->playUserXTone(852, 1336, 500, 100, tone_length); break;
+    case '9': f->playUserXTone(852, 1477, 500, 100, tone_length); break;
+    case 'D': f->playUserXTone(852, 1633, 500, 100, tone_length); break;
+    case '*': f->playUserXTone(941, 1209, 500, 100, tone_length); break;
+    case '0': f->playUserXTone(941, 1336, 500, 100, tone_length); break;
+    case '#': f->playUserXTone(941, 1477, 500, 100, tone_length); break;
+    case 'R': f->playUserXTone(941, 1633, 500, 100, tone_length); break;
   }
 }
