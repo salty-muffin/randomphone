@@ -25,3 +25,6 @@ hacked landline phone that calls random stored numbers
 * [Adafruit 4 Ohm 3 W speaker](https://www.adafruit.com/product/3351) for ringing
 * [Sparkfun 16x2 LCD display](https://www.sparkfun.com/products/14073)
 * [panel mount USB extender](https://www.adafruit.com/product/937)
+
+## other
+* ring sound from [freesound.org](https://freesound.org/people/Timbre/sounds/391870/) by Timbre which is a modification of [this recording](https://freesound.org/people/inchadney/sounds/391215/) by inchadney
