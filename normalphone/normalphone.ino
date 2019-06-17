@@ -14,6 +14,8 @@
 #include <Adafruit_FONA.h>
 #include <Keypad.h>
 #include <JQ6500_Serial.h>
+#include <SendOnlySoftwareSerial.h>
+#include <SerLCD.h>
 
 // pins ----------------------------------------------------
 // fona pins
