@@ -4,10 +4,10 @@
 // to finally work, disable all serial communication (slows it down if not connected to a computer somehow)
 // and comment out the line "#define ADAFRUIT_FONA_DEBUG" in "FONAConfig.h" in the modified library
 
-// defines -------------------------------------------------
+// defines ---------------------------------------------------------------------
 #define UTILS_ERROR 200
 
-// libraries -----------------------------------------------
+// libraries -------------------------------------------------------------------
 #include <Metro.h>
 #include <Bounce2.h>
 #include <SoftwareSerial.h>
@@ -17,7 +17,7 @@
 #include <SendOnlySoftwareSerial.h>
 #include <SerLCD.h>
 
-// pins ----------------------------------------------------
+// pins ------------------------------------------------------------------------
 // fona pins
 const uint8_t FONA_RX  = 9;
 const uint8_t FONA_TX  = 8;
@@ -43,7 +43,7 @@ const uint8_t HOOK = 18;
 const uint8_t row_pins[4]    = {14, 16, 13, 12};
 const uint8_t column_pins[4] = {15, 23, 10, 11};
 
-// constants -----------------------------------------------
+// constants -------------------------------------------------------------------
 // keymap
 const char keys[4][4] = {{'1', '2', '3', 'X'},
                          {'4', '5', '6', 'A'},
@@ -53,7 +53,7 @@ const char keys[4][4] = {{'1', '2', '3', 'X'},
 // wait ... milliseconds to call after last dial
 const uint64_t call_delay = 3000;
 
-// objects -------------------------------------------------
+// objects ---------------------------------------------------------------------
 // fona
 SoftwareSerial fona_ss = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fona_serial = &fona_ss;
@@ -74,7 +74,7 @@ Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
 // display
 Bounce display_plugged = Bounce();
 
-// variables -----------------------------------------------
+// variables -------------------------------------------------------------------
 // fona communication c-strings
 char replybuffer[255];
 char number[30];
@@ -98,17 +98,17 @@ uint8_t tone_sequence;
 bool led_status = true;
 bool ringing;
 
-// functions -----------------------------------------------
-// output to display
+// functions -------------------------------------------------------------------
+// output to display (input, battery, rssi)
 void display(String i, uint16_t b, uint8_t r);
-// check for hook pick up and act
+// check for hook pick up and act (pin, debounce interval, hook status pointer)
 int8_t checkHook(uint8_t p, uint16_t i, bool* s = NULL);
-// check signal an battery
+// check signal an battery (fona pointer, battery pointer, rssi pointer)
 void checkUtils(Adafruit_FONA* f, uint16_t* b, uint8_t* r);
-// play corresponding keytone
+// play corresponding keytone(fona pointer, key)
 void playKeyTone(Adafruit_FONA* f, char k);
 
-// setup ---------------------------------------------------
+// setup -----------------------------------------------------------------------
 void setup()
 {
   // setup serial (DEBUG)
@@ -159,7 +159,7 @@ void setup()
   if (!display_plugged.read())  display("RANDOMPHONE", battery, rssi);
 }
 
-// loop  ----------------------------------------------------
+// loop  ------------------------------------------------------------------------
 void loop()
 {
   // check to ring
@@ -368,7 +368,7 @@ void loop()
   }
 }
 
-// functions -----------------------------------------------
+// functions -------------------------------------------------------------------
 void display(String i, uint16_t b, uint8_t r)
 {
   // static variables
