@@ -121,7 +121,7 @@ void setup()
   digitalWrite(LED, LOW);
 
   // set debounce time for hook
-  keypad.setDebounceTime(5);
+  keypad.setDebounceTime(3);
 
   // attach debouncer to display and set time
   display_plugged.attach(DISPLAY_CHECK, INPUT_PULLUP);
