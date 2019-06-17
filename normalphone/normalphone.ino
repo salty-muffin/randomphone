@@ -72,7 +72,7 @@ Metro ring_timer(1000); // ring check timer
 Keypad keypad = Keypad(makeKeymap(keys), row_pins, column_pins, 4, 4);
 
 // display
-Bounce diplay_plugged = Bounce();
+Bounce display_plugged = Bounce();
 
 // variables -----------------------------------------------
 // fona communication c-strings
@@ -97,8 +97,6 @@ uint8_t user_status = 0;
 uint8_t tone_sequence;
 bool led_status = true;
 bool ringing;
-
-
 
 // functions -----------------------------------------------
 // output to display
@@ -125,9 +123,9 @@ void setup()
   // set debounce time for hook
   keypad.setDebounceTime(5);
 
-  // set display plug test debounce time
-  diplay_plugged.attach(DISPLAY_CHECK, INPUT_PULLUP);
-  diplay_plugged.interval(50);
+  // attach debouncer to display and set time
+  display_plugged.attach(DISPLAY_CHECK, INPUT_PULLUP);
+  display_plugged.interval(50);
 
   // set up sim800 communication
   fona_serial->begin(38400);
@@ -155,6 +153,10 @@ void setup()
 
   // check signal and battery
   checkUtils(&fona, &battery, &rssi);
+
+  // display welcoming message
+  display_plugged.update();
+  if (!display_plugged.read())  display("RANDOMPHONE", battery, rssi);
 }
 
 // loop  ----------------------------------------------------
@@ -226,6 +228,10 @@ void loop()
     key_input = "";
     key_copy = "";
 
+    // display
+    display_plugged.update();
+    if (!display_plugged.read())  display(key_input, battery, rssi);
+
     // reset dialability
     user_status = 0;
   }
@@ -259,6 +265,10 @@ void loop()
         // clear input
         key_input = "";
         key_copy = "";
+
+        // display
+        display_plugged.update();
+        if (!display_plugged.read())  display(key_input, battery, rssi);
       }
     }
     else
@@ -290,6 +300,10 @@ void loop()
       // clear input
       key_input = "";
       key_copy = "";
+
+      // display
+      display_plugged.update();
+      if (!display_plugged.read())  display(key_input, battery, rssi);
     }
   }
 
@@ -311,6 +325,10 @@ void loop()
     {
       playKeyTone(&fona, key);
     }
+
+    // display
+    display_plugged.update();
+    if (!display_plugged.read())  display(key_input, battery, rssi);
   }
 
   // check signal and battery
@@ -332,16 +350,68 @@ void loop()
         led_status = !led_status;
       }
     }
+
+    // display
+    display_plugged.update();
+    if (!display_plugged.read())  display(key_input, battery, rssi);
   }
 
   // DEBUG
-  if (serial_timer.check()) Serial.println("S: " + String(rssi) + "\tB: " + String(battery) + "\tK: " + key_input + "\tL: " + last_input);
+  if (serial_timer.check())
+  {
+    display_plugged.update();
+    if (display_plugged.fell())
+    {
+      display(key_input, battery, rssi);
+    }
+    Serial.println("D: " + String(display_plugged.read()) + "\tS: " + String(rssi) + "\tB: " + String(battery) + "\tK: " + key_input + "\tL: " + last_input);
+  }
 }
 
 // functions -----------------------------------------------
 void display(String i, uint16_t b, uint8_t r)
 {
+  // static variables
+  static SendOnlySoftwareSerial display_serial(DISPLAY_RX);
+  static SerLCD lcd;
 
+  static bool first = true;
+
+  if (first) // if first -> attach pin and set interval
+  {
+    display_serial.begin(9600);
+
+    lcd.begin(display_serial);
+
+    lcd.setBacklight(255, 0, 0);
+    lcd.setContrast(0);
+
+    first = false;
+  }
+
+  lcd.clear();
+
+  if (r == UTILS_ERROR)
+    lcd.print("ERROR");
+  else
+    lcd.print(String(r) + "/5");
+
+  if (b == UTILS_ERROR)
+  {
+    lcd.setCursor(11, 0);
+    lcd.print("ERROR");
+  }
+  else
+  {
+    if (battery < 10)
+      lcd.setCursor(14, 0);
+    else
+      lcd.setCursor(13, 0);
+
+    lcd.print(String(b) + "%");
+  }
+  lcd.setCursor(0, 1);
+  lcd.print(i);
 }
 
 int8_t checkHook(uint8_t p, uint16_t i, bool* s)
