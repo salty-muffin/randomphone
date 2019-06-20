@@ -188,6 +188,14 @@ void setup()
 // loop  ------------------------------------------------------------------------
 void loop()
 {
+  // DEBUG ---------------------------------------------------------------------
+  if (serial_timer.check())
+    Serial.println("D: " + String(display_plugged.read()) +
+                   "\tS: " + String(rssi) +
+                   "\tB: " +String(battery) +
+                   "\tK: " + key_input +
+                   "\tI: " + number_index);
+
   // check to ring (set allow_incoming to enable/disable) ----------------------
   if (ring_timer.check() && allow_incoming)
   {
@@ -381,14 +389,6 @@ void loop()
     // update display
     display(key_input, battery, rssi);
   }
-
-  // DEBUG ---------------------------------------------------------------------
-  if (serial_timer.check())
-    Serial.println("D: " + String(display_plugged.read()) +
-                   "\tS: " + String(rssi) +
-                   "\tB: " +String(battery) +
-                   "\tK: " + key_input +
-                   "\tI: " + number_index);
 }
 
 // functions -------------------------------------------------------------------
