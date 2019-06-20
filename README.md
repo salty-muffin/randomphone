@@ -4,7 +4,7 @@ hacked landline phone that calls random stored numbers
 * [x] created a normal phone that can dial, call, ring and answer
 * [x] adjust debounce time on keypad down (if possible)
 * [x] attach display
-* [ ] create random phone
+* [x] create random phone
 * [ ] merge (so that with display plugged in it will be the random phone and without display it will be a normal cell phone disguised as an old landline phone)
 
 ## libraries
