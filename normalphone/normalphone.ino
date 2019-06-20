@@ -141,6 +141,7 @@ void setup()
       delay(100);
       digitalWrite(LED, LOW);
       delay(100);
+    }
   }
   Serial.println("found fona"); // DEBUG ***
   // one blink to signal startup

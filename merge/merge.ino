@@ -161,6 +161,7 @@ void setup()
       delay(100);
       digitalWrite(LED, LOW);
       delay(100);
+    }
   }
   Serial.println("found fona"); // DEBUG ***
   // one blink to signal startup
@@ -201,7 +202,8 @@ void loop()
                    "\tS: " + String(rssi) +
                    "\tB: " + String(battery) +
                    "\tK: " + key_input +
-                   "\tL: " + last_input);
+                   "\tL: " + last_input + 
+                   "\tI: " + number_index);
   }
 
   // check whether display is plugged in
@@ -209,6 +211,7 @@ void loop()
   // if display has just been pulled -------------------------------------------
   if (display_plugged.rose())
   {
+    Serial.println("pulled");
     // clear significant variables
     key_input = "";
     key_copy = "";
@@ -219,6 +222,7 @@ void loop()
   // else if display has just been pulled --------------------------------------
   else if (display_plugged.fell())
   {
+    Serial.println("plugged");
     // clear significant variables
     key_input = "";
 
