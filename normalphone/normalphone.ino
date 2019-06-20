@@ -64,7 +64,7 @@ Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 JQ6500_Serial ringer(JQ_TX, JQ_RX);
 
 // timers
-Metro serial_timer(1000); // DEBUG
+Metro serial_timer(1000); // DEBUG ***
 Metro utils_timer(20000); // battery and signal timer
 Metro tone_timer(300); // timer for dial tones
 Metro led_timer(2000); // led blink timer
@@ -170,6 +170,21 @@ void setup()
 // loop  -----------------------------------------------------------------------
 void loop()
 {
+  // DEBUG ---------------------------------------------------------------------
+  if (serial_timer.check())
+  {
+    display_plugged.update();
+    if (display_plugged.fell())
+    {
+      display(key_input, battery, rssi);
+    }
+    Serial.println("D: " + String(display_plugged.read()) +
+                   "\tS: " + String(rssi) +
+                   "\tB: " + String(battery) +
+                   "\tK: " + key_input +
+                   "\tL: " + last_input);
+  }
+  
   // check to ring -------------------------------------------------------------
   if (ring_timer.check())
   {
@@ -365,21 +380,6 @@ void loop()
     // update display
     display_plugged.update();
     if (!display_plugged.read())  display(key_input, battery, rssi);
-  }
-
-  // DEBUG ---------------------------------------------------------------------
-  if (serial_timer.check())
-  {
-    display_plugged.update();
-    if (display_plugged.fell())
-    {
-      display(key_input, battery, rssi);
-    }
-    Serial.println("D: " + String(display_plugged.read()) +
-                   "\tS: " + String(rssi) +
-                   "\tB: " + String(battery) +
-                   "\tK: " + key_input +
-                   "\tL: " + last_input);
   }
 }
 

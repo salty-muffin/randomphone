@@ -20,7 +20,8 @@
 
 // settings (things to agjust) -------------------------------------------------
 const uint64_t call_delay = 3000; // wait ... milliseconds to call after last dial
-const uint16_t max_number_index = EEPROM.length() / 15; // maximum numbers that can be stored
+const uint8_t bytes_per_number = 15; // how many bytes of storage does any number take up?
+const uint16_t max_number_index = EEPROM.length() / bytes_per_number; // maximum numbers that can be stored
 
 // pins ------------------------------------------------------------------------
 // fona pins
@@ -66,7 +67,7 @@ Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 JQ6500_Serial ringer(JQ_TX, JQ_RX);
 
 // timers
-Metro serial_timer(1000); // DEBUG
+Metro serial_timer(1000); // DEBUG ***
 Metro utils_timer(20000); // battery and signal timer
 Metro tone_timer(300); // timer for dial tones
 Metro led_timer(2000); // led blink timer
@@ -85,20 +86,15 @@ char number[30];
 
 // keypad-input
 String key_input = "";
-String last_input = "";
 
 // values for utitlies
 uint16_t battery;
 uint8_t rssi;
 
-// timer variables
-uint64_t last_key;
-
 // other
 bool hook_status;
 uint8_t user_status = 0;
 uint8_t tone_sequence;
-bool led_status = true;
 bool ringing;
 
 // random
@@ -392,7 +388,6 @@ void loop()
                    "\tS: " + String(rssi) +
                    "\tB: " +String(battery) +
                    "\tK: " + key_input +
-                   "\tL: " + last_input +
                    "\tI: " + number_index);
 }
 
@@ -505,25 +500,25 @@ void playKeyTone(Adafruit_FONA* f, char k)
 
 uint8_t getIndex()
 {
-  for (uint16_t i = 1; i < EEPROM.length(); i += 15)
+  for (uint16_t i = 1; i < EEPROM.length(); i += bytes_per_number)
   {
     if (EEPROM.read(i) == 0)
-      return (i - 1) / 15;
+      return (i - 1) / bytes_per_number;
   }
 }
 
 void storeNumber(String n, uint16_t i)
 {
   for (uint16_t j = 0; j < n.length(); j++)
-    EEPROM.write(1 + i * 15 + j, n[j]);
+    EEPROM.write(1 + i * bytes_per_number + j, n[j]);
 }
 
 String readNumber(uint16_t i)
 {
   String out = "";
-  for (uint16_t j = 0; j < 15; j++)
+  for (uint16_t j = 0; j < bytes_per_number; j++)
   {
-    char c = EEPROM.read(1 + (i - 1) * 15 + j);
+    char c = EEPROM.read(1 + (i - 1) * bytes_per_number + j);
     if (c != 0)
       out += String(c);
   }
