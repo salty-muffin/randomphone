@@ -16,10 +16,11 @@
 #include <JQ6500_Serial.h>
 #include <SendOnlySoftwareSerial.h>
 #include <SerLCD.h>
+#include <EEPROM.h>
 
-// settings --------------------------------------------------------------------
+// settings (things to agjust) -------------------------------------------------
 const uint64_t call_delay = 3000; // wait ... milliseconds to call after last dial
-const boolean allow_incoming = true; // allow incoming calls to ring and pick up
+const uint16_t max_number_index = EEPROM.length() / 15; // maximum numbers that can be stored
 
 // pins ------------------------------------------------------------------------
 // fona pins
@@ -58,9 +59,11 @@ const char keys[4][4] = {{'1', '2', '3', 'X'},
 // fona
 SoftwareSerial fona_ss = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fona_serial = &fona_ss;
-JQ6500_Serial ringer(JQ_TX, JQ_RX);
 
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
+
+// jq
+JQ6500_Serial ringer(JQ_TX, JQ_RX);
 
 // timers
 Metro serial_timer(1000); // DEBUG
@@ -101,6 +104,7 @@ bool ringing;
 // random
 String random_number = "";
 uint8_t number_index;
+bool allow_incoming; // allow incoming calls to ring and pick up
 
 // functions -------------------------------------------------------------------
 // output to display (input, battery, rssi)
@@ -114,16 +118,20 @@ void playKeyTone(Adafruit_FONA* f, char k);
 // get current eeprom index
 uint8_t getIndex();
 // store number in eeprom
-void storeNumber(String n)
+void storeNumber(String n, uint16_t i);
 // read number from eeprom (index)
-String readNumber(uint8_t i)
+String readNumber(uint16_t i);
 // clear all clearNumbers
 void clearNumbers();
+// get the status of allow_incoming in eeprom
+bool getIncoming();
+// set the status of allow_incoming in eeprom
+void setIncoming(bool b);
 
 // setup -----------------------------------------------------------------------
 void setup()
 {
-  // setup serial (DEBUG)
+  // DEBUG ***
   Serial.begin(115200);
 
   // set pins
@@ -143,16 +151,23 @@ void setup()
   fona_serial->begin(38400);
   while (!fona.begin(*fona_serial))
   {
-    Serial.println("can't find fona");
+    Serial.println("can't find fona"); // DEBUG ***
 
-    while (true) delay(10);
+    while (true) // infine fast blink
+    {
+      digitalWrite(LED, HIGH);
+      delay(100);
+      digitalWrite(LED, LOW);
+      delay(100);
+    }
   }
-  Serial.println("found fona");
+  Serial.println("found fona"); // DEBUG ***
+  // one blink to signal startup
   digitalWrite(LED, HIGH);
   delay(1000);
   digitalWrite(LED, LOW);
 
-  // ringer serial initaiate
+  // ringer (jq) serial initaiate
   ringer.begin(9600);
   ringer.reset();
   ringer.setVolume(30);
@@ -168,6 +183,7 @@ void setup()
 
   // random
   number_index = getIndex();
+  allow_incoming = getIncoming(); // allow incoming calls to ring and pick up
 
   // display welcoming message
   display("RANDOMPHONE", battery, rssi);
@@ -176,23 +192,26 @@ void setup()
 // loop  ------------------------------------------------------------------------
 void loop()
 {
-  // check to ring (set allow_incoming to enable/disable)
+  // check to ring (set allow_incoming to enable/disable) ----------------------
   if (ring_timer.check() && allow_incoming)
   {
-    if (fona.getCallStatus() == 3 && !ringing)
+    uint8_t call_status = fona.getCallStatus();
+
+    if (call_status == 3 && !ringing) // if incoming call -> ring
     {
       ringer.play();
 
       ringing = true;
     }
-    else if (fona.getCallStatus() != 3 && ringing)
+    else if (call_status != 3 && ringing) // no incoming call, but is ringing -> stop
     {
       ringer.pause();
 
       ringing = false;
     }
   }
-  // check hook
+
+  // check hook ----------------------------------------------------------------
   int8_t hook_change = checkHook(HOOK, 25, &hook_status);
   if (hook_change == 1) // if picked up
   {
@@ -206,18 +225,20 @@ void loop()
 
       fona.pickUp();
     }
-    else if (call_status != 3 || !allow_incoming)// else if no incoming call / answering is disabled
+    else if (call_status != 3 || !allow_incoming) // else if no incoming call/answering is disabled
     {
       if (number_index == 0) // no number is stored -> play dialtone
       {
         fona.playToolkitTone(FONA_STTONE_USADIALTONE, 15300000);
+
+        display("nothing stored", battery, rssi);
       }
       else
       {
         // read random number from eeprom
-        random_number = readNumber(random(number_index));
+        random_number = readNumber(random(number_index) + 1);
 
-        // start calling random number
+        // goto dial sequence for random number
         user_status = 2;
 
         tone_sequence = 0;
@@ -249,14 +270,14 @@ void loop()
     // clear input
     key_input = "";
 
-    // display
+    // update display
     display(key_input, battery, rssi);
 
     // reset dialability
     user_status = 0;
   }
 
-  // run dial and call routines
+  // run dial and call routines ------------------------------------------------
   if (user_status == 2) // autodial random number
   {
     if (tone_sequence < random_number.length()) // play tones for number in string
@@ -276,14 +297,20 @@ void loop()
     }
   }
 
-  // check keypad
+  // check keypad --------------------------------------------------------------
   char key = keypad.getKey();
 
   // check key
   if (user_status == 0 && key != NO_KEY && key != 'D' && key != 'X') // if earpiece put down and only for certain keys
   {
     // remove
-    if (key == 'R' && key_input.length() > 0) key_input.remove(key_input.length() - 1);
+    if (key == 'R' && key_input.length() > 0)
+    {
+      key_input.remove(key_input.length() - 1);
+
+      // update display
+      display(key_input, battery, rssi);
+    }
     // enter
     else if (key == 'A')
     {
@@ -294,37 +321,36 @@ void loop()
         // clear input
         key_input = "";
 
-        // display
+        // update display
         display("cleared", battery, rssi);
       }
       else if (key_input == "*2*") // allow incoming calls
       {
-        storeNumber(key_input);
         allow_incoming = true;
+        setIncoming(true);
 
         // clear input
         key_input = "";
 
-        // display
+        // update display
         display("incoming on", battery, rssi);
       }
       else if (key_input == "*3*") // disallow incoming calls
       {
-        storeNumber(key_input);
         allow_incoming = false;
+        setIncoming(false);
 
         // clear input
         key_input = "";
 
-        // display
+        // update display
         display("incoming off", battery, rssi);
       }
       else if (key_input.length() >= 10 && key_input.length() <= 15) // if the number has the right length -> store
       {
-        if (number_index <= max_number_index) // stace in eeprom left
+        if (number_index < max_number_index) // space in eeprom left
         {
-          storeNumber(key_input);
-          number_index++;
+          storeNumber(key_input, number_index++);
           // clear input
           key_input = "";
 
@@ -336,30 +362,38 @@ void loop()
           // clear input
           key_input = "";
 
-          // display
+          // update display
           display("no more storage", battery, rssi);
         }
       }
     }
     // number
-    else if (key != 'R') key_input += String(key);
+    else if (key != 'R')
+    {
+      key_input += String(key);
 
-    // display
-    display(key_input, battery, rssi);
+      // update display
+      display(key_input, battery, rssi);
+    }
   }
 
-  // check signal and battery
+  // check signal and battery --------------------------------------------------
   if (utils_timer.check())
   {
     checkUtils(&fona, &battery, &rssi);
 
-    // display
+    // update display
     display(key_input, battery, rssi);
   }
 
-  // DEBUG
+  // DEBUG ---------------------------------------------------------------------
   if (serial_timer.check())
-    Serial.println("D: " + String(display_plugged.read()) + "\tS: " + String(rssi) + "\tB: " + String(battery) + "\tK: " + key_input + "\tL: " + last_input);
+    Serial.println("D: " + String(display_plugged.read()) +
+                   "\tS: " + String(rssi) +
+                   "\tB: " +String(battery) +
+                   "\tK: " + key_input +
+                   "\tL: " + last_input +
+                   "\tI: " + number_index);
 }
 
 // functions -------------------------------------------------------------------
@@ -471,20 +505,51 @@ void playKeyTone(Adafruit_FONA* f, char k)
 
 uint8_t getIndex()
 {
-
+  for (uint16_t i = 1; i < EEPROM.length(); i += 15)
+  {
+    if (EEPROM.read(i) == 0)
+      return (i - 1) / 15;
+  }
 }
 
-void storeNumber(String n)
+void storeNumber(String n, uint16_t i)
 {
-
+  for (uint16_t j = 0; j < n.length(); j++)
+    EEPROM.write(1 + i * 15 + j, n[j]);
 }
 
-String readNumber(uint8_t i)
+String readNumber(uint16_t i)
 {
-
+  String out = "";
+  for (uint16_t j = 0; j < 15; j++)
+  {
+    char c = EEPROM.read(1 + (i - 1) * 15 + j);
+    if (c != 0)
+      out += String(c);
+  }
+  return out;
 }
 
 void clearNumbers()
 {
+  for (uint16_t i = 1; i < EEPROM.length(); i++)
+  {
+    EEPROM.write(i, 0);
+  }
+}
 
+bool getIncoming()
+{
+  if (EEPROM.read(0) > 0)
+    return true;
+  else
+    return false;
+}
+
+void setIncoming(bool b)
+{
+  if (b)
+    EEPROM.write(0, 1);
+  else
+    EEPROM.write(0, 0);
 }
