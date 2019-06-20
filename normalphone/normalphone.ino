@@ -17,6 +17,9 @@
 #include <SendOnlySoftwareSerial.h>
 #include <SerLCD.h>
 
+// settings (things to agjust) -------------------------------------------------
+const uint64_t call_delay = 3000; // wait ... milliseconds to call after last dial
+
 // pins ------------------------------------------------------------------------
 // fona pins
 const uint8_t FONA_RX  = 9;
@@ -50,16 +53,15 @@ const char keys[4][4] = {{'1', '2', '3', 'X'},
                          {'7', '8', '9', 'D'},
                          {'*', '0', '#', 'R'}};
 
-// wait ... milliseconds to call after last dial
-const uint64_t call_delay = 3000;
-
 // objects ---------------------------------------------------------------------
 // fona
 SoftwareSerial fona_ss = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fona_serial = &fona_ss;
-JQ6500_Serial ringer(JQ_TX, JQ_RX);
 
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
+
+// jq
+JQ6500_Serial ringer(JQ_TX, JQ_RX);
 
 // timers
 Metro serial_timer(1000); // DEBUG
@@ -111,7 +113,7 @@ void playKeyTone(Adafruit_FONA* f, char k);
 // setup -----------------------------------------------------------------------
 void setup()
 {
-  // setup serial (DEBUG)
+  // DEBUG ***
   Serial.begin(115200);
 
   // set pins
@@ -131,16 +133,22 @@ void setup()
   fona_serial->begin(38400);
   while (!fona.begin(*fona_serial))
   {
-    Serial.println("can't find fona");
+    Serial.println("can't find fona"); // DEBUG ***
 
-    while (true) delay(10);
+    while (true) // infine fast blink
+    {
+      digitalWrite(LED, HIGH);
+      delay(100);
+      digitalWrite(LED, LOW);
+      delay(100);
   }
-  Serial.println("found fona");
+  Serial.println("found fona"); // DEBUG ***
+  // one blink to signal startup
   digitalWrite(LED, HIGH);
   delay(1000);
   digitalWrite(LED, LOW);
 
-  // ringer serial initaiate
+  // ringer (jq) serial initaiate
   ringer.begin(9600);
   ringer.reset();
   ringer.setVolume(30);
@@ -156,29 +164,32 @@ void setup()
 
   // display welcoming message
   display_plugged.update();
-  if (!display_plugged.read())  display("RANDOMPHONE", battery, rssi);
+  if (!display_plugged.read())  display("HI THERE", battery, rssi);
 }
 
-// loop  ------------------------------------------------------------------------
+// loop  -----------------------------------------------------------------------
 void loop()
 {
-  // check to ring
+  // check to ring -------------------------------------------------------------
   if (ring_timer.check())
   {
-    if (fona.getCallStatus() == 3 && !ringing)
+    uint8_t call_status = fona.getCallStatus();
+
+    if (call_status == 3 && !ringing) // if incoming call -> ring
     {
       ringer.play();
 
       ringing = true;
     }
-    else if (fona.getCallStatus() != 3 && ringing)
+    else if (call_status != 3 && ringing) // no incoming call, but is ringing -> stop
     {
       ringer.pause();
 
       ringing = false;
     }
   }
-  // check hook
+
+  // check hook ----------------------------------------------------------------
   int8_t hook_change = checkHook(HOOK, 25, &hook_status);
   if (hook_change == 1) // if picked up
   {
@@ -199,7 +210,7 @@ void loop()
       // enable dialling
       user_status = 1;
     }
-    else // else if something was dialed
+    else // else if something was dialed -> go to dial sequence
     {
       // enable calling
       user_status = 2;
@@ -228,7 +239,7 @@ void loop()
     key_input = "";
     key_copy = "";
 
-    // display
+    // update display
     display_plugged.update();
     if (!display_plugged.read())  display(key_input, battery, rssi);
 
@@ -236,10 +247,10 @@ void loop()
     user_status = 0;
   }
 
-  // run dial and call routines
-  if (user_status == 1) // nothing dialled
+  // run dial and call routines ------------------------------------------------
+  if (user_status == 1) // nothing dialled yet
   {
-    if (key_input != "")
+    if (key_input != "") // play dial tone until something is dialed
     {
       fona.stopToolkitTone();
 
@@ -266,7 +277,7 @@ void loop()
         key_input = "";
         key_copy = "";
 
-        // display
+        // update display
         display_plugged.update();
         if (!display_plugged.read())  display(key_input, battery, rssi);
       }
@@ -277,7 +288,7 @@ void loop()
       key_copy = key_input;
     }
   }
-  else if (user_status == 2) // something dialled
+  else if (user_status == 2) // something dialled already
   {
     if (tone_sequence < key_input.length()) // play tones for number in string
     {
@@ -307,7 +318,7 @@ void loop()
     }
   }
 
-  // check keypad
+  // check keypad --------------------------------------------------------------
   char key = keypad.getKey();
 
   // check key
@@ -326,12 +337,12 @@ void loop()
       playKeyTone(&fona, key);
     }
 
-    // display
+    // update display
     display_plugged.update();
     if (!display_plugged.read())  display(key_input, battery, rssi);
   }
 
-  // check signal and battery
+  // check signal and battery --------------------------------------------------
   if (utils_timer.check())
   {
     checkUtils(&fona, &battery, &rssi);
@@ -351,12 +362,12 @@ void loop()
       }
     }
 
-    // display
+    // update display
     display_plugged.update();
     if (!display_plugged.read())  display(key_input, battery, rssi);
   }
 
-  // DEBUG
+  // DEBUG ---------------------------------------------------------------------
   if (serial_timer.check())
   {
     display_plugged.update();
@@ -364,7 +375,11 @@ void loop()
     {
       display(key_input, battery, rssi);
     }
-    Serial.println("D: " + String(display_plugged.read()) + "\tS: " + String(rssi) + "\tB: " + String(battery) + "\tK: " + key_input + "\tL: " + last_input);
+    Serial.println("D: " + String(display_plugged.read()) +
+                   "\tS: " + String(rssi) +
+                   "\tB: " + String(battery) +
+                   "\tK: " + key_input +
+                   "\tL: " + last_input);
   }
 }
 
