@@ -5,7 +5,8 @@ hacked landline phone that calls random stored numbers
 * [x] adjust debounce time on keypad down (if possible)
 * [x] attach display
 * [x] create random phone
-* [ ] merge (so that with display plugged in it will be the random phone and without display it will be a normal cell phone disguised as an old landline phone)
+* [x] merge (so that with display plugged in it will be the random phone and without display it will be a normal cell phone disguised as an old landline phone)
+* put in capacitors to filter out noise
 
 ## libraries
 * [Metro](https://github.com/thomasfredericks/Metro-Arduino-Wiring) by Thomas Fredericks
