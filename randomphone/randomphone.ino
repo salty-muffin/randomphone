@@ -513,7 +513,7 @@ bool storeNumber(String n, uint16_t i)
 {
   // conversion of string to uint64_t (with checking for non-number characters)
   uint64_t ldw = 1;
-  for (int i = 0; i < n.length(); i++)
+  for (uint8_t i = 0; i < n.length(); i++)
   {
     if (n[i] < '0' || n[i] > '9')
       return false;
