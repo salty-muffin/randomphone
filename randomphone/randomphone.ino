@@ -16,12 +16,12 @@
 #include <JQ6500_Serial.h>
 #include <SendOnlySoftwareSerial.h>
 #include <SerLCD.h>
-#include <EEPROM.h>
+#include <EEPROMex.h>
 
 // settings (things to agjust) -------------------------------------------------
 const uint64_t call_delay = 3000; // wait ... milliseconds to call after last dial
-const uint8_t bytes_per_number = 15; // how many bytes of storage does any number take up?
-const uint16_t max_number_index = EEPROM.length() / bytes_per_number; // maximum numbers that can be stored
+const uint8_t bytes_per_number = 8; // how many bytes of storage does any number take up?
+const uint16_t max_number_index = EEPROMSizeATmega32u4 / bytes_per_number; // maximum numbers that can be stored
 
 // pins ------------------------------------------------------------------------
 // fona pins
@@ -114,7 +114,7 @@ void playKeyTone(Adafruit_FONA* f, char k);
 // get current eeprom index
 uint8_t getIndex();
 // store number in eeprom
-void storeNumber(String n, uint16_t i);
+bool storeNumber(String n, uint16_t i);
 // read number from eeprom (index)
 String readNumber(uint16_t i);
 // clear all clearNumbers
@@ -240,7 +240,7 @@ void loop()
       else
       {
         // read random number from eeprom
-        random_number = readNumber(random(number_index) + 1);
+        random_number = readNumber(random(number_index));
 
         // goto dial sequence for random number
         user_status = 2;
@@ -354,12 +354,12 @@ void loop()
       {
         if (number_index < max_number_index) // space in eeprom left
         {
-          storeNumber(key_input, number_index++);
+          if (storeNumber(key_input, number_index++))
+            display("stored", battery, rssi); // update display
+          else
+            display("only numbers", battery, rssi); // update display
           // clear input
           key_input = "";
-
-          // display
-          display("stored", battery, rssi);
         }
         else // no space left
         {
@@ -500,51 +500,66 @@ void playKeyTone(Adafruit_FONA* f, char k)
 
 uint8_t getIndex()
 {
-  for (uint16_t i = 1; i < EEPROM.length(); i += bytes_per_number)
+  for (uint16_t i = 1; i < EEPROMSizeATmega32u4; i += bytes_per_number)
   {
-    if (EEPROM.read(i) == 0)
+    uint64_t ldw;
+    EEPROM.readBlock(i, ldw);
+    if (ldw == 0)
       return (i - 1) / bytes_per_number;
   }
 }
 
-void storeNumber(String n, uint16_t i)
+bool storeNumber(String n, uint16_t i)
 {
-  for (uint16_t j = 0; j < n.length(); j++)
-    EEPROM.write(1 + i * bytes_per_number + j, n[j]);
+  // conversion of string to uint64_t (with checking for non-number characters)
+  uint64_t ldw = 1;
+  for (int i = 0; i < n.length(); i++)
+  {
+    if (n[i] < '0' || n[i] > '9')
+      return false;
+
+    ldw *= 10;
+    ldw += n[i] - '0';
+  }
+
+  EEPROM.updateBlock(i * bytes_per_number + 1, ldw);
+  return true;
 }
 
 String readNumber(uint16_t i)
 {
+  uint64_t ldw;
+  EEPROM.readBlock(i * bytes_per_number + 1, ldw);
+
+  // conversion of uint64_t to string
   String out = "";
-  for (uint16_t j = 0; j < bytes_per_number; j++)
+  do
   {
-    char c = EEPROM.read(1 + (i - 1) * bytes_per_number + j);
-    if (c != 0)
-      out += String(c);
+    char c = ldw % 10 + '0';
+    ldw /= 10;
+
+    out = c + out;
   }
+  while(ldw);
+
+  out.remove(0);
   return out;
 }
 
 void clearNumbers()
 {
-  for (uint16_t i = 1; i < EEPROM.length(); i++)
+  for (uint16_t i = 1; i < EEPROMSizeATmega32u4; i++)
   {
-    EEPROM.write(i, 0);
+    EEPROM.update(i, 0);
   }
 }
 
 bool getIncoming()
 {
-  if (EEPROM.read(0) > 0)
-    return true;
-  else
-    return false;
+  return EEPROM.readBit(0, 0);
 }
 
 void setIncoming(bool b)
 {
-  if (b)
-    EEPROM.write(0, 1);
-  else
-    EEPROM.write(0, 0);
+  EEPROM.updateBit(0, 0, b);
 }
