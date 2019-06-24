@@ -118,7 +118,7 @@ bool storeNumber(String n, uint16_t i);
 // read number from eeprom (index)
 String readNumber(uint16_t i);
 // clear all clearNumbers
-void clearNumbers();
+void clearNumbers(uint16_t i);
 // get the status of allow_incoming in eeprom
 bool getIncoming();
 // set the status of allow_incoming in eeprom
@@ -173,6 +173,7 @@ void setup()
   fona.setAudio(FONA_EXTAUDIO);
   fona.setVolume(20);
   fona.setRingerVolume(0);
+  fona.setToneVolume(100);
 
   // check signal and battery
   checkUtils(&fona, &battery, &rssi);
@@ -180,6 +181,7 @@ void setup()
   // random
   number_index = getIndex();
   allow_incoming = getIncoming(); // allow incoming calls to ring and pick up
+  EEPROM.setMaxAllowedWrites(2048);
 
   // display welcoming message
   display("RANDOMPHONE", battery, rssi);
@@ -320,7 +322,7 @@ void loop()
     {
       if (key_input == "*1*") // clear
       {
-        clearNumbers();
+        clearNumbers(number_index);
         number_index = 0;
         // clear input
         key_input = "";
@@ -382,7 +384,7 @@ void loop()
       {
         // clear input
         key_input = "";
-          
+
         // update display
         display("too short/long", battery, rssi);
       }
@@ -545,11 +547,11 @@ String readNumber(uint16_t i)
   return out;
 }
 
-void clearNumbers()
+void clearNumbers(uint16_t i)
 {
-  for (uint16_t i = 1; i < EEPROMSizeATmega32u4; i++)
+  for (uint16_t j = 1; j < i * bytes_per_number; j++)
   {
-    EEPROM.update(i, 0);
+    EEPROM.update(j, 0);
   }
 }
 

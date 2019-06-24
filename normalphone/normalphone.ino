@@ -159,6 +159,7 @@ void setup()
   fona.setAudio(FONA_EXTAUDIO);
   fona.setVolume(20);
   fona.setRingerVolume(0);
+  fona.setToneVolume(100);
 
   // check signal and battery
   checkUtils(&fona, &battery, &rssi);
@@ -185,7 +186,7 @@ void loop()
                    "\tK: " + key_input +
                    "\tL: " + last_input);
   }
-  
+
   // check to ring -------------------------------------------------------------
   if (ring_timer.check())
   {
