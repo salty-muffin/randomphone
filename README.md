@@ -16,6 +16,7 @@ hacked landline phone that calls random stored numbers
 * [JQ6500_Serial](https://github.com/sleemanj/JQ6500_Serial) by James Sleeman
 * [SendOnlySoftwareSerial](https://github.com/nickgammon/SendOnlySoftwareSerial) by Nick Gammon
 * [Sparkfun Serial LCD](https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library)
+* [EEPROMex](https://github.com/thijse/Arduino-EEPROMEx) by Thijs Elenbaas
 
 ## hardware
 * german telephone made by deutsche post from 1991
