@@ -20,7 +20,7 @@
 
 // settings (things to agjust) -------------------------------------------------
 const uint64_t call_delay = 3000; // wait ... milliseconds to call after last dial
-const uint8_t bytes_per_number = 8; // how many bytes of storage does any number take up?
+const uint8_t bytes_per_number = 15; // how many bytes of storage does any number take up?
 const uint16_t max_number_index = EEPROMSizeATmega32u4 / bytes_per_number; // maximum numbers that can be stored
 
 // pins ------------------------------------------------------------------------
@@ -378,6 +378,14 @@ void loop()
           display("no more storage", battery, rssi);
         }
       }
+      else
+      {
+        // clear input
+        key_input = "";
+          
+        // update display
+        display("too short/long", battery, rssi);
+      }
     }
     // number
     else if (key != 'R')
@@ -510,47 +518,30 @@ uint8_t getIndex()
 {
   for (uint16_t i = 1; i < EEPROMSizeATmega32u4; i += bytes_per_number)
   {
-    uint64_t ldw;
-    EEPROM.readBlock(i, ldw);
-    if (ldw == 0)
+    if (EEPROM.read(i) == 0)
       return (i - 1) / bytes_per_number;
   }
 }
 
 bool storeNumber(String n, uint16_t i)
 {
-  // conversion of string to uint64_t (with checking for non-number characters)
-  uint64_t ldw = 1;
-  for (uint8_t i = 0; i < n.length(); i++)
+  for (uint16_t j = 0; j < n.length(); j++)
   {
-    if (n[i] < '0' || n[i] > '9')
-      return false;
-
-    ldw *= 10;
-    ldw += n[i] - '0';
+    if (n[j] < '0' || n[j] > '9') return false;
+    EEPROM.update(1 + i * bytes_per_number + j, n[j]);
   }
-
-  EEPROM.updateBlock(i * bytes_per_number + 1, ldw);
   return true;
 }
 
 String readNumber(uint16_t i)
 {
-  uint64_t ldw;
-  EEPROM.readBlock(i * bytes_per_number + 1, ldw);
-
-  // conversion of uint64_t to string
   String out = "";
-  do
+  for (uint16_t j = 0; j < bytes_per_number; j++)
   {
-    char c = ldw % 10 + '0';
-    ldw /= 10;
-
-    out = c + out;
+    char c = EEPROM.read(1 + i * bytes_per_number + j);
+    if (c != 0)
+      out += String(c);
   }
-  while(ldw);
-
-  out.remove(0);
   return out;
 }
 
