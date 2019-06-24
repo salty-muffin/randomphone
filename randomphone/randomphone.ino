@@ -350,6 +350,14 @@ void loop()
         // update display
         display("incoming off", battery, rssi);
       }
+      else if (key_input == "*4*") // show how many number are saved
+      {
+        // clear input
+        key_input = "";
+
+        // update display
+        display("stored: " + String(number_index) + "/" + String(max_number_index), battery, rssi);
+      }
       else if (key_input.length() >= 10 && key_input.length() <= 15) // if the number has the right length -> store
       {
         if (number_index < max_number_index) // space in eeprom left
