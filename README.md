@@ -1,7 +1,7 @@
 # randomphone
 hacked landline phone that calls random stored numbers
 
-![phone1]()
+![phone1](https://github.com/papayapeter/randomphone/blob/master/doc/IMG_01.jpeg)
 
 ## manual
 When the display isn't plugged in it will function like a normal old landline phone (except that it runs on a battery). In other words you can dial, call, be called, pick and hang up normally. The R-key functions to remove last input. The Redial-key (two small overlapping circles) doesn't need any further explanation I think.
@@ -12,6 +12,9 @@ You can type in certain combination to view and change and view settings:
 * \*2\* allows incoming calls
 * \*3\* doesn't allow incoming calls
 * \*4\* displays how many numbers are and can be stored
+
+![phone2](https://github.com/papayapeter/randomphone/blob/master/doc/IMG_02.jpeg)
+![phone4](https://github.com/papayapeter/randomphone/blob/master/doc/IMG_04.jpeg)
 
 ## libraries
 * [Metro](https://github.com/thomasfredericks/Metro-Arduino-Wiring) by Thomas Fredericks
