@@ -1,12 +1,17 @@
 # randomphone
 hacked landline phone that calls random stored numbers
 
-* [x] created a normal phone that can dial, call, ring and answer
-* [x] adjust debounce time on keypad down (if possible)
-* [x] attach display
-* [x] create random phone
-* [x] merge (so that with display plugged in it will be the random phone and without display it will be a normal cell phone disguised as an old landline phone)
-* [ ] put in capacitors to filter out noise
+![phone1]()
+
+## manual
+When the display isn't plugged in it will function like a normal old landline phone (except that it runs on a battery). In other words you can dial, call, be called, pick and hang up normally. The R-key functions to remove last input. The Redial-key (two small overlapping circles) doesn't need any further explanation I think.
+
+When the display is plugged in it functions as the RANDOMPHONE. you can only input a number when the earpiece is on the hook. with the Enter-key (the arrow pointing into the square). That number is anonymously stored. If the earpiece is picked up, a random number from the storage is called. The R-key functions as mentioned, the Redial-key doesn't do anything anymore.
+You can type in certain combination to view and change and view settings:
+* \*1\* clears all numbers from storage
+* \*2\* allows incoming calls
+* \*3\* doesn't allow incoming calls
+* \*4\* displays how many numbers are and can be stored
 
 ## libraries
 * [Metro](https://github.com/thomasfredericks/Metro-Arduino-Wiring) by Thomas Fredericks
@@ -32,12 +37,11 @@ hacked landline phone that calls random stored numbers
 ## other
 * ring sound from [freesound.org](https://freesound.org/people/Timbre/sounds/391870/) by Timbre which is a modification of [this recording](https://freesound.org/people/inchadney/sounds/391215/) by inchadney
 
-## manual
-When the display isn't plugged in it will function like a normal old landline phone (except that it runs on a battery). In other words you can dial, call, be called, pick and hang up normally. The R-key functions to remove last input. The Redial-key (two small overlapping circles) doesn't need any further explanation I think.
-
-When the display is plugged in it functions as the RANDOMPHONE. you can only input a number when the earpiece is on the hook. with the Enter-key (the arrow pointing into the square). That number is anonymously stored. If the earpiece is picked up, a random number from the storage is called. The R-key functions as mentioned, the Redial-key doesn't do anything anymore.
-You can type in certain combination to view and change and view settings:
-* \*1\* clears all numbers from storage
-* \*2\* allows incoming calls
-* \*3\* doesn't allow incoming calls
-* \*4\* displays how many numbers are and can be stored
+## to do
+* [x] created a normal phone that can dial, call, ring and answer
+* [x] adjust debounce time on keypad down (if possible)
+* [x] attach display
+* [x] create random phone
+* [x] merge (so that with display plugged in it will be the random phone and without display it will be a normal cell phone disguised as an old landline phone)
+* [x] put in capacitors to filter out noise
+* [ ] upload video documentation
