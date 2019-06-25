@@ -187,7 +187,7 @@ void setup()
   // random
   number_index = getIndex();
   allow_incoming = getIncoming(); // allow incoming calls to ring and pick up
-  EEPROM.setMaxAllowedWrites(2048);
+  EEPROM.setMaxAllowedWrites(8096);
 
   // display welcoming message
   display_plugged.update();
@@ -587,23 +587,17 @@ void loop()
         }
         else if (key_input.length() >= 10 && key_input.length() <= 15) // if the number has the right length -> store
         {
-          if (number_index < max_number_index) // space in eeprom left
-          {
-            if (storeNumber(key_input, number_index++))
-              display("stored", battery, rssi); // update display
-            else
-              display("only numbers", battery, rssi); // update display
-            // clear input
-            key_input = "";
-          }
-          else // no space left
-          {
-            // clear input
-            key_input = "";
+          // if storage is full overwrite from index 0
+          if (number_index >= max_number_index)
+            number_index = 0;
 
-            // update display
-            display("no more storage", battery, rssi);
-          }
+          // check for inegrety of input and store
+          if (storeNumber(key_input, number_index++))
+            display("stored", battery, rssi); // update display
+          else
+            display("only numbers", battery, rssi); // update display
+          // clear input
+          key_input = "";
         }
         else
         {
