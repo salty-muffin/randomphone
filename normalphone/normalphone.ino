@@ -130,7 +130,7 @@ void setup()
   display_plugged.interval(50);
 
   // set up sim800 communication
-  fona_serial->begin(38400);
+  fona_serial->begin(4800);
   while (!fona.begin(*fona_serial))
   {
     Serial.println("can't find fona"); // DEBUG ***

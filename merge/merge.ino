@@ -134,7 +134,7 @@ void setIncoming(bool b);
 void setup()
 {
   // DEBUG ***
-  Serial.begin(115200);
+  // Serial.begin(115200);
 
   // set pins
   pinMode(HOOK_GND, OUTPUT);
@@ -150,10 +150,10 @@ void setup()
   display_plugged.interval(50);
 
   // set up sim800 communication
-  fona_serial->begin(38400);
+  fona_serial->begin(4800);
   while (!fona.begin(*fona_serial))
   {
-    Serial.println("can't find fona"); // DEBUG ***
+    // Serial.println("can't find fona"); // DEBUG ***
 
     while (true) // infine fast blink
     {
@@ -163,7 +163,7 @@ void setup()
       delay(100);
     }
   }
-  Serial.println("found fona"); // DEBUG ***
+  // Serial.println("found fona"); // DEBUG ***
   // one blink to signal startup
   digitalWrite(LED, HIGH);
   delay(1000);
@@ -198,15 +198,15 @@ void setup()
 void loop()
 {
   // DEBUG -------------------------------------------------------------------
-  if (serial_timer.check())
-  {
-    Serial.println("D: " + String(display_plugged.read()) +
-                   "\tS: " + String(rssi) +
-                   "\tB: " + String(battery) +
-                   "\tK: " + key_input +
-                   "\tL: " + last_input +
-                   "\tI: " + number_index);
-  }
+  // if (serial_timer.check())
+  // {
+  //   Serial.println("D: " + String(display_plugged.read()) +
+  //                  "\tS: " + String(rssi) +
+  //                  "\tB: " + String(battery) +
+  //                  "\tK: " + key_input +
+  //                  "\tL: " + last_input +
+  //                  "\tI: " + number_index);
+  // }
 
   // check whether display is plugged in
   display_plugged.update();
